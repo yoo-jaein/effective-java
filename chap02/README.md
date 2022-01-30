@@ -277,7 +277,17 @@ private static long sum() {
 
 메모리 누수(memory leak)가 발생하는 프로그램을 오래 실행하다 보면 점차 가비지 컬렉션 활동과 메모리 사용량이 늘어나 결국 성능이 저하될 것이다. 심할 때는 디스크 페이징이나 OutOfMemoryError를 일으켜 프로그램이 예기치 않게 종료되기도 한다.  
 
-객체 참조 하나를 살려두면 가비지 컬렉터는 그 객체뿐 아니라 그 객체가 참조하는 모든 객체와 그 객체들이 참조하는 모든 객체들을 회수해가지 못한다. 그래서 단 몇 개의 객체가 매우 많은 객체를 회수하지 못하게 할 수 있고 잠재적으로 성능에 악영향을 줄 수 있다.  
+[객체 참조](https://github.com/yoo-jaein/TIL/blob/main/Java/References.md) 하나를 살려두면 가비지 컬렉터는 그 객체뿐 아니라 그 객체가 참조하는 모든 객체와 그 객체들이 참조하는 모든 객체들을 회수해가지 못한다. 그래서 단 몇 개의 객체가 매우 많은 객체를 회수하지 못하게 할 수 있고 잠재적으로 성능에 악영향을 줄 수 있다.  
+
+```java
+public Object pop() {
+	if (size == 0)
+		throw new EmptyStackException();
+	Object result = elements[--size];
+	elements[size] = null; // 다 쓴 참조 해제
+	return result;
+}
+```
 
 해법은 간단하다. 해당 참조를 다 썼을 때 null 처리(참조 해제)하면 된다. 다만 객체 참조를 null 처리하는 일은 예외적인 경우여야 한다. 일반적으로 자기 메모리를 직접 관리하는 클래스라면 원소를 다 사용한 즉시 그 원소가 참조한 객체들을 다 null 처리해줘야 한다.  
 
@@ -285,4 +295,71 @@ private static long sum() {
 
 캐시를 만들 때 보통은 캐시 엔트리의 유효 기간을 정확히 정의하기 어렵기 때문에 시간이 지날수록 엔트리의 가치를 떨어뜨리는 방식을 흔히 사용한다. 이런 방식에서는 쓰지 않는 엔트리를 이따끔 청소해줘야 한다.   
 
-리스너(listener) 혹은 콜백(callback). 클라이언트가 콜백을 등록만 하고 명확히 해지하지 않는다면 뭔가 조치해주지 않는 한 콜백은 계속 쌓여갈 것이다. 이럴 때 콜백을 약한 참조(weak reference)로 저장하면 가비지 컬렉터가 즉시 수거해간다. 예를 들어 WeakHashMap에 키로 저장하면 된다.  
+리스너(listener) 혹은 콜백(callback). 클라이언트가 콜백을 등록만 하고 명확히 해지하지 않는다면 뭔가 조치해주지 않는 한 콜백은 계속 쌓여갈 것이다. 이럴 때 콜백을 약한 참조(weak reference)로 저장하면 가비지 컬렉터가 즉시 수거해간다. 예를 들어 WeakHashMap에 키로 저장하면 된다.
+
+## 아이템 8. finalizer와 cleaner 사용을 피하라
+> *핵심 정리*  
+> cleaner는 안전망 역할이나 중요하지 않은 네이티브 자원 회수용으로만 사용하자. 물론 이런 경우라도 불확실성과 성능 저하에 주의해야 한다.
+
+자바는 finalizer와 cleaner라는 두 가지 객체 소멸자를 제공한다. 그 중 finalizer는 예측할 수 없고, 상황에 따라 위험할 수 있어 일반적으로 불필요하다. clenaer는 finalizer보다는 덜 위험하지만, 여전히 예측할 수 없고 느리기 때문에 일반적으로 불필요하다. 
+
+### 단점
+- finalizer와 cleaner는 즉시 수행된다는 보장이 없다. 수행 시점은 JVM 구현마다 천차만별이며 수행 시점에 의존하는 프로그램의 동작도 마찬가지다.
+- finalizer와 cleaner는 수행 여부도 보장하지 않는다. 데이터베이스처럼 상태를 영구적으로 수정하는 작업에서는 절대 finalizer, cleaner를 의존해서는 안 된다.
+- finalizer 동작 중 발생한 예외는 무시되며 처리할 작업이 남아도 그 순간 종료된다.
+- finalizer와 cleaner는 심각한 성능 문제도 동반한다.
+- finalizer를 사용한 클래스는 finalizer 공격에 노출된다.
+
+### 해결
+finalizer나 cleaner를 대신하여 AutoCloseable을 구현해주고, 클라이언트에서 인스턴스를 다 쓰고 나면 close()를 호출하도록 하자.
+
+## 아이템 9. try-finally보다는 try-with-resources를 사용하라
+> *핵심 정리*
+> 꼭 회수해야 하는 자원을 다룰 때는 try-finally 말고, try-with-resources를 사용하자. 예외는 없다.
+
+자바 라이브러리에는 InputStream, OutputStream, Connection 등 close()를 호출해 직접 닫아줘야 하는 자원이 많다. 자원 닫기는 클라이언트가 놓치기 쉬워서 성능 문제로 이어지기도 한다. try-with-resources 버전이 짧고 읽기 수월하며 문제를 진단하기도 좋다. 이 구조를 사용하려면 해당 자원이 AutoCloseable 인터페이스를 구현해야 한다. 이미 자바 라이브러리와 서드파티 라이브러리들에서 AutoCloseable을 구현하거나 확장해뒀다.
+
+### try-finally
+```java
+BufferedReader br = new BufferedReader(new FileReader(path));
+try {
+	return br.readLine();
+} finally {
+	br.close();
+}
+```
+
+```java
+InputStream in = new FileInputStream(src);
+try {
+	OutputStream out = new FileOutputStream(dst);
+	try {
+		byte[] buf = new byte[BUFFER_SIZE];
+		int n;
+		while ((n = in.read(buf)) >= 0)
+			out.write(buf, 0, n);
+	} finally {
+		out.close();
+	}
+} finally {
+	in.close();
+}
+```
+
+### try-with-resources
+```java
+try (BufferedReader br = new BufferedReader(new FileReader(path))) {
+	return br.readLine();
+} catch (IOException e) {
+	return defaultVal;
+}
+```
+
+```java
+try (InputStream in = new FileInputStream(src); OutputStream out = new FileOutputStream(dst)) {
+	byte[] buf = new byte[BUFFER_SIZE];
+	int n;
+	while ((n = in.read(buf)) >= 0)
+		out.write(buf, 0, n);
+}
+```
