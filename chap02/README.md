@@ -298,7 +298,7 @@ public Object pop() {
 리스너(listener) 혹은 콜백(callback). 클라이언트가 콜백을 등록만 하고 명확히 해지하지 않는다면 뭔가 조치해주지 않는 한 콜백은 계속 쌓여갈 것이다. 이럴 때 콜백을 약한 참조(weak reference)로 저장하면 가비지 컬렉터가 즉시 수거해간다. 예를 들어 WeakHashMap에 키로 저장하면 된다.
 
 ## 아이템 8. finalizer와 cleaner 사용을 피하라
-> *핵심 정리*  
+> **핵심 정리**  
 > cleaner는 안전망 역할이나 중요하지 않은 네이티브 자원 회수용으로만 사용하자. 물론 이런 경우라도 불확실성과 성능 저하에 주의해야 한다.
 
 자바는 finalizer와 cleaner라는 두 가지 객체 소멸자를 제공한다. 그 중 finalizer는 예측할 수 없고, 상황에 따라 위험할 수 있어 일반적으로 불필요하다. clenaer는 finalizer보다는 덜 위험하지만, 여전히 예측할 수 없고 느리기 때문에 일반적으로 불필요하다. 
@@ -314,7 +314,7 @@ public Object pop() {
 finalizer나 cleaner를 대신하여 AutoCloseable을 구현해주고, 클라이언트에서 인스턴스를 다 쓰고 나면 close()를 호출하도록 하자.
 
 ## 아이템 9. try-finally보다는 try-with-resources를 사용하라
-> *핵심 정리*
+> **핵심 정리**  
 > 꼭 회수해야 하는 자원을 다룰 때는 try-finally 말고, try-with-resources를 사용하자. 예외는 없다.
 
 자바 라이브러리에는 InputStream, OutputStream, Connection 등 close()를 호출해 직접 닫아줘야 하는 자원이 많다. 자원 닫기는 클라이언트가 놓치기 쉬워서 성능 문제로 이어지기도 한다. try-with-resources 버전이 짧고 읽기 수월하며 문제를 진단하기도 좋다. 이 구조를 사용하려면 해당 자원이 AutoCloseable 인터페이스를 구현해야 한다. 이미 자바 라이브러리와 서드파티 라이브러리들에서 AutoCloseable을 구현하거나 확장해뒀다.
