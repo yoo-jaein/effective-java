@@ -176,7 +176,7 @@ Collections.reverseOrder나 Collections.emptySet같이 요청한 ```타입 매�
 > **핵심 정리**  
 > 조금 복잡하더라도 와일드카드 타입을 적용하면 API가 훨씬 유연해진다. 널리 쓰일 라이브러리를 작성한다면 와일드카드 타입을 적절히 사용해줘야 한다.
 
-매개변수화 타입은 불공변(invariant)이다. 하지만 때론 불공변 방식보다 유연한 무언가가 필요하다. 자바는 한정적 와일드카드 타입이라는 특별한 매개변수화 타입을 지원한다.  
+매개변수화 타입은 ```불공변(invariant)```이다. 하지만 때론 불공변 방식보다 유연한 무언가가 필요하다. 자바는 ```한정적 와일드카드 타입```이라는 특별한 매개변수화 타입을 지원한다.  
 
 ```java
 public void pushAll(Iterable<? extends E> src) {
@@ -185,7 +185,7 @@ public void pushAll(Iterable<? extends E> src) {
 }
 ```
 
-위 코드에서 pushAll의 입력 매개변수 타입 Iterable<? extends E>는 'E 혹은 E의 하위 타입의 Iterable'이라는 뜻이다. (모든 타입은 자기 자신의 하위 타입이다.)
+위 코드에서 pushAll의 입력 매개변수 타입 ```Iterable<? extends E>```는 'E 혹은 E의 하위 타입의 Iterable'이라는 뜻이다. (모든 타입은 자기 자신의 하위 타입이다.)
 
 ```java
 public void popAll(Collection<? super E> dst) {
@@ -194,12 +194,12 @@ public void popAll(Collection<? super E> dst) {
 }
 ```
 
-위 코드에서 popAll의 입력 매개변수 타입 Collection<? super E>는 'E 혹은 E의 상위 타입의 Collection'이어야 한다. (모든 타입은 자기 자신의 상위 타입이다.)  
+위 코드에서 popAll의 입력 매개변수 타입 ```Collection<? super E>```는 'E 혹은 E의 상위 타입의 Collection'이어야 한다. (모든 타입은 자기 자신의 상위 타입이다.)  
 
 유연성을 극대화하려면 원소의 생산자나 소비자용 입력 매개변수에 와일드카드 타입을 사용하라. 다음 공식을 외우자.  
-- PECS : producer-extends, consumer-super
+- ```PECS``` : producer-extends, consumer-super
 
-즉, 매개변수화 타입 T가 생산자라면 <? extends T>를 사용하고, 소비자라면 <? super T>를 사용하라. 주의해야 할 점은, 반환 타입에는 한정적 와일드카드 타입을 사용해서는 안 된다는 것이다. 반환 타입에 사용하면 클라이언트 코드에서도 와일드카드 타입을 써야하므로 좋지 않다.  
+즉, ```매개변수화 타입``` ```T```가 ```생산자```라면 ```<? extends T>```를 사용하고, ```소비자```라면 ```<? super T>```를 사용하라. 주의해야 할 점은, 반환 타입에는 한정적 와일드카드 타입을 사용해서는 안 된다는 것이다. 반환 타입에 사용하면 클라이언트 코드에서도 와일드카드 타입을 써야하므로 좋지 않다.  
 
 ---
 ## 아이템 32. 제네릭과 가변인수를 함께 쓸 때는 신중하라
@@ -223,7 +223,7 @@ public void dangerous(List<String>... stringLists) { // 경고! Possible heap po
 하지만 제네릭과 가변인수를 함께 사용하는 메서드가 실무에서 매우 유용하기 때문에 자바 라이브러리도 Arrays.asList(T... a), Collections.addAll(Collection<? super T> c, T... elements) 등 메서드를 제공한다. 이 메서드들은 dangerous 메서드와 달리 타입 세이프하다.  
 
 ### @SafeVarargs
-@SafeVarargs 애너테이션은 메서드 작성자가 그 메서드가 타입 세이프함을 보장하는 장치다. 이 애너테이션이 붙어있다면 컴파일러는 그 메서드가 안전하지 않을 수 있다는 경고를 하지 않는다. 메서드가 타입 세이프함을 확인하려면 다음 조건을 검사한다.
+```@SafeVarargs``` 애너테이션은 메서드 작성자가 그 메서드가 타입 세이프함을 보장하는 장치다. 이 애너테이션이 붙어있다면 컴파일러는 그 메서드가 안전하지 않을 수 있다는 경고를 하지 않는다. 메서드가 타입 세이프함을 확인하려면 다음 조건을 검사한다.
 - 가변 인수 메서드를 호출할 때 varargs 매개변수를 담는 제네릭 배열에 아무것도 덮어쓰지 않고 그 배열의 참조가 밖으로 노출되지 않는가?
 - varargs 매개변수 배열이 순수하게 인수들을 전달하는 일만 하는가?
 - varargs 매개변수 배열이 신뢰할 수 없는 코드에 노출되지 않았는가?
