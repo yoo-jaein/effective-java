@@ -156,7 +156,7 @@ words.collect(groupingBy(word -> alphabetize(word)))
 ```
 
 ```java
-// 반복 코드 - 코드 블
+// 반복 코드 - 코드 블록
 for (Suit suit : Suit.values()) {
 	for (Rank rank : Rank.values()) {
 		result.add(new Card(suit, rank));
