@@ -65,3 +65,135 @@ public이 아닌 메서드라면 단언문(assert)을 사용해 매개변수 유
 boolean을 받아야 의미가 더 명확할 때는 예외다. 열거 타입을 사용하면 코드를 읽고 쓰기가 더 쉬워지며 나중에 선택지를 추가하기도 쉽다.
 
 ---
+
+## 아이템 52. 다중정의는 신중히 사용하라
+> **핵심 정리**  
+> 일반적으로 매개변수의 개수가 같을 떄는 다중정의를 피하는 게 좋다. 
+
+재정의(override)한 메서드는 동적으로 선택되고, 다중정의(overload)한 메서드는 정적으로 선택된다. 다중정의된 메서드 사이에서는 객체의 런타임 타입은 중요하지 않으며, 오직 매개변수의 컴파일타임 타입에 의해 호출될 메서드가 결정된다. 안전하게 하려면 매개변수 수가 같은 다중정의는 만들지 말자. 다중정의 대신 메서드 이름을 다르게 지어주는 방법도 있다.
+
+---
+
+## 아이템 53. 가변인수는 신중히 사용하라
+> **핵심 정리**  
+> 인수 개수가 일정하지 않은 메서드를 정의할 때 가변인수가 필요하다. 메서드를 정의할 때 필수 매개변수는 가변인수 앞에 두고, 가변인수를 사용할 때는 성능 문제까지 고려하자.
+
+```java
+public static int sum(int... args) {
+	int sum = 0;
+	for (int arg : args) 
+		sum += arg;
+	return sum;
+}
+```
+
+갸변인수(varargs) 메서드는 명시한 타입의 인수를 0개 이상 받을 수 있다. 가변인수 메서드를 호출하면 다음과 같은 일이 일어난다.
+1. 인수의 개수와 길이가 같은 배열이 만들어진다.
+2. 이 배열에 인수들이 저장된다.
+3. 가변인수 메서드에 배열이 전달된다.
+
+
+인수가 1개 이상이어야 할 때도 있다.   
+```java
+public static int min(int... args) {
+	if (args.length == 0)
+		throw new IllegalArgumentException("인수가 1개 이상 필요합니다.");
+	int min = args[0];
+	//...
+}
+```
+
+이 방식에는 문제가 있다. 가장 심각한 문제는 인수를 0개만 넣어 호출하면 런타임에 예외가 발생한다는 점이다. 다음 코드처럼 매개변수를 2개 받도록 하면 해결된다.
+
+```java
+public static int min(int firstArg, int... remainingArgs) {
+	int min = firstArg;
+	//...
+}
+```
+
+성능에 민감한 상황이라면 가변인수가 걸림돌이 될 수 있다. 가변인수 메서드는 호출될 때마다 배열을 새로 하나 할당하고 초기화한다. 이 문제를 개선할 수 있는 방법이 있다.
+
+```java
+public void foo() {}
+public void foo(int a1) {}
+public void foo(int a1, int a2) {}
+public void foo(int a1, int a2, int a3) {}
+public void foo(int a1, int a2, int a3, int... rest) {}
+```
+
+EnumSet의 정적 팩터리, List의 정적 팩터리 등에서 이 기법을 사용하여 배열 생성 비용을 최소화한다.
+
+---
+
+## 아이템 54. null이 아닌, 빈 컬렉션이나 배열을 반환하라
+> **핵심 정리**  
+> null이 아닌 빈 배열이나 컬렉션을 반환하라.
+
+컬렉션이나 배열 같은 컨테이너(container)가 비었을 떄 null을 반환하는 메서드를 사용할 때면 클라이언트에서 null 체크 코드를 넣어줘야 한다. API를 사용하는데 불필요한 코드가 늘어나며, 만약 체크 코드를 빼먹으면 오류가 발생할 수 있다. 따라서 null이 아닌 빈 배열이나 컬렉션을 반환하자.
+
+```java
+public List<Cheese> getCheeses() {
+	return cheesesInStock.isEmpty() ? Collections.emptyList() : new ArrayList<>(cheesesInStock);
+}
+```
+
+Collections.emptyList(), Collections.emptySet(), Collections.emptyMap()은 매번 똑같은 빈 '불변' 컬렉션을 반환한다. 불변 객체는 자유롭게 공유해도 안전하다. 
+
+```java
+public Cheese[] getCheeses() {
+	return cheesesInStock.toArray(new Cheese[0]);
+}
+```
+
+---
+
+## 아이템 55. 옵셔널 반환은 신중히 하라
+> **핵심 정리**  
+> 값을 반환하지 못할 가능성이 있고, 호출할 때마다 반환값이 없을 가능성을 염두에 둬야 하는 메서드라면 옵셔널을 반환해야 할 상황일 수 있다. 하지만 옵셔널 반환에는 성능 저하가 뒤따르니, 성능에 민감한 메서드라면 null을 반환하거나 예외를 던지는 편이 나을 수 있다. 
+
+자바 8 전에는 메서드가 특정 조건에서 값을 반환할 수 없을 때 예외를 던지거나 null을 반환하곤 했다. 그러나 예외는 진짜 예외적인 상황에서만 사용해야 하며 예외를 생성할 때 스택 트레이스 전체를 캡처하므로 비용도 만만치 않다. null을 반환할때는 클라이언트에서 별도의 null 처리 코드를 추가해야 했으며, 방어 코드가 없으면 언젠가 NullPointerException이 발생할 위험이 있었다. 
+
+자바 8에 등장한 Optional<T>는 null이 아닌 T 타입 참조를 하나 담거나, 혹은 아무것도 담지 않을 수 있다. 옵셔널은 원소를 최대 1개 가질 수 있는 불변 컬렉션이다. 따라서 보통은 T를 반환하지만 특정 조건에서 빈 결과를 반환할 때 T대신 Optional<T>를 반환하도록 선언하면 된다. 옵셔널을 반환하는 메서드는 예외를 던지는 메서드보다 유연하고 사용하기 쉬우며, null을 반환하는 메서드보다 오류 가능성이 적다.
+
+### Optional<T> 사용법
+```java
+if (c.isEmpty())
+	return Optional.empty(); // 빈 옵셔널 만들기
+```
+
+```java
+return Optional.of(result); // 값이 든 옵셔널 만들기. null을 넣으면 NPE가 발생!
+```
+
+```java
+return Optional.ofNullable(result); // 값이 든 옵셔널 만들기. null 값도 허용함
+```
+
+```java
+String lastWordInLexicon = max(words).orElse("단어없음"); // 기본값 설정하기
+```
+
+```java
+Toy myToy = max(toys).orElseThrow(TemperTantrumException::new); // 상황에 맞는 예외 던지기. 예외가 발생할 때만 예외가 생성된다.
+```
+
+```java
+Element lastNobleGas = max(Elements.NOBLE_GASES).get(); // 값을 꺼내 사용하기. 값이 없다면 NoSuchElementException이 발생!
+```
+
+```java
+boolean isPresent = parentProcess.isPresent(); // 옵셔널에 값이 채워져 있으면 true, 비어 있으면 false를 반환
+```
+
+```java
+streamOfOptionals
+	.flatMap(Optional::stream) // 자바 9에 추가된 Optional.stream() 메서드. 옵셔널을 스트림으로 변환한다.
+```
+
+### 주의사항
+1. 컬렉션, 스트림, 배열, 옵셔널 같은 컨테이너 타입은 옵셔널로 감사면 안 된다. Optional<List<T>>를 반환하기보다는 빈 List<T>를 반환하는 게 좋다.
+2. 박싱된 기본 타입을 담은 옵셔널을 사용하지 말고 OptionalInt, OptionalLong, OptionalDouble을 사용하자.
+3. 옵셔널을 컬렉션 키, 값, 원소, 배열의 원소로 사용하지 말자.
+
+---
